@@ -27,5 +27,4 @@ end
 
 ## TODO
 
-* 去掉 rest-client
 * 实现 share 的 API

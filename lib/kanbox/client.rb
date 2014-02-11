@@ -139,18 +139,26 @@ You can store #access_token.token in you database or local file, when you restar
     end
 
     def put(path, source_file_path, opts = {})
-      # TODO: use ruby stdlib to instead rest-client
-      require 'rest-client'
-      f = File.open(source_file_path)
-      url = "https://api-upload.kanbox.com/0/upload/#{path}"
-      response = RestClient.post(url,f, self.access_token.headers)
+      uri = URI.parse("https://api-upload.kanbox.com/0/upload/#{path}")
+
+      require 'net/http'
+      https = Net::HTTP.new(uri.host, uri.port)
+      https.use_ssl = true
+      req = Net::HTTP::Post.new(uri.path)
+      req['Authorization'] = self.access_token.headers['Authorization']
+
       result = Result.new
-      if response == "1"
-        result.success = true
-      else
-        result.success = false
-        result.error_code = response
-      end
+      File.open(source_file_path, 'rb') do |f| 
+        req.content_length = f.size
+        req.body_stream = f 
+        response = https.start {|s| s.request(req)}
+        if response.body == "1" 
+          result.success = true
+        else
+          result.success = false
+          result.error_code = response.code
+        end    
+      end 
       result
     end
 
